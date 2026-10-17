@@ -29,10 +29,20 @@ export interface OrchestratorOptions {
 /**
  * Enterprise Multi-Agent Code Review Orchestrator
  *
- * Coordinates:
+ * Coordinates three specialized agents:
+ *
  * 1. Code Quality Analyzer
  * 2. Test Coverage Analyzer
  * 3. Refactoring Suggester
+ *
+ * Features:
+ * - GitHub MCP integration
+ * - ESLint MCP integration
+ * - Structured JSON output
+ * - Zod schema validation
+ * - Rate limiting
+ * - Agent execution verification
+ * - Windows-compatible Claude SDK execution
  */
 export class CodeReviewOrchestrator {
   private readonly options: OrchestratorOptions;
@@ -46,7 +56,11 @@ export class CodeReviewOrchestrator {
     repo: string,
     prNumber: number
   ): Promise<ReviewReport> {
+
+    // --------------------------------------------------
     // 1. Validate input
+    // --------------------------------------------------
+
     if (!owner.trim() || !repo.trim()) {
       throw new Error(
         'Repository owner and name are required.'
@@ -62,7 +76,10 @@ export class CodeReviewOrchestrator {
       );
     }
 
+    // --------------------------------------------------
     // 2. Configure model
+    // --------------------------------------------------
+
     const model =
       this.options.model ??
       process.env.ANTHROPIC_MODEL ??
@@ -70,7 +87,10 @@ export class CodeReviewOrchestrator {
 
     const maxTurns = this.options.maxTurns ?? 100;
 
-    // 3. Resolve and validate working directory
+    // --------------------------------------------------
+    // 3. Validate working directory
+    // --------------------------------------------------
+
     const workingDirectory = resolve(
       process.env.PROJECT_ROOT || process.cwd()
     );
@@ -84,14 +104,20 @@ export class CodeReviewOrchestrator {
     console.log('Working directory:', workingDirectory);
     console.log('Node executable:', process.execPath);
 
-    // 4. Validate GitHub configuration
+    // --------------------------------------------------
+    // 4. Validate GitHub authentication
+    // --------------------------------------------------
+
     if (!process.env.GITHUB_TOKEN?.trim()) {
       throw new Error(
         'GITHUB_TOKEN is missing. Configure it in your .env file.'
       );
     }
 
-    // 5. Build review prompt
+    // --------------------------------------------------
+    // 5. Construct review prompt
+    // --------------------------------------------------
+
     const prompt = `
 Review GitHub pull request ${owner}/${repo}#${prNumber}.
 
@@ -131,6 +157,10 @@ MANDATORY WORKFLOW:
 10. Return the complete structured report.
 `;
 
+    // --------------------------------------------------
+    // 6. Initialize execution tracking
+    // --------------------------------------------------
+
     let report: ReviewReport | undefined;
 
     const invokedAgents = new Set<string>();
@@ -148,19 +178,30 @@ MANDATORY WORKFLOW:
       `Starting multi-agent review: ${owner}/${repo}#${prNumber}`
     );
 
-    // 6. Acquire a rate-limited execution slot.
-    // This reservation covers the entire review operation.
-    console.log('[RATE LIMITER] Waiting for available capacity...');
+    // --------------------------------------------------
+    // 7. Acquire rate-limited execution slot
+    // --------------------------------------------------
+
+    console.log(
+      '[RATE LIMITER] Waiting for available capacity...'
+    );
 
     await globalRateLimiter.acquire(1000);
 
-    console.log('[RATE LIMITER] Execution slot acquired.');
+    console.log(
+      '[RATE LIMITER] Execution slot acquired.'
+    );
 
     try {
-      // 7. Execute Claude Agent SDK
+
+      // ------------------------------------------------
+      // 8. Execute Claude Agent SDK
+      // ------------------------------------------------
+
       try {
         for await (const message of query({
           prompt,
+
           options: {
             model,
             maxTurns,
@@ -171,9 +212,10 @@ MANDATORY WORKFLOW:
 
             permissionMode: 'default',
 
-            // Use the installed Node.js executable on Windows.
+            // Use the installed Node.js executable.
             executable: 'node',
 
+            // Windows-compatible subprocess execution.
             spawnClaudeCodeProcess: (options) => {
               const command =
                 options.command === 'node' ||
@@ -219,12 +261,19 @@ MANDATORY WORKFLOW:
             }
           }
         })) {
-          // 8. Inspect SDK initialization
+
+          // --------------------------------------------
+          // 9. Inspect SDK initialization
+          // --------------------------------------------
+
           if (
             message.type === 'system' &&
             message.subtype === 'init'
           ) {
-            console.log('\n=== CLAUDE SDK INITIALIZED ===');
+
+            console.log(
+              '\n=== CLAUDE SDK INITIALIZED ==='
+            );
 
             console.log(
               'Available MCP servers:',
@@ -255,23 +304,35 @@ MANDATORY WORKFLOW:
             }
           }
 
-          // 9. Log tool usage and agent delegation
+          // --------------------------------------------
+          // 10. Track tool usage and agent delegation
+          // --------------------------------------------
+
           if (message.type === 'assistant') {
+
             for (const block of message.message.content) {
+
               if (block.type !== 'tool_use') {
                 continue;
               }
 
-              console.log(`[TOOL] ${block.name}`);
+              console.log(
+                `[TOOL] ${block.name}`
+              );
 
-              if (block.name.startsWith('mcp__github__')) {
+              // Verify GitHub MCP was actually used.
+              if (
+                block.name.startsWith('mcp__github__')
+              ) {
                 githubToolUsed = true;
               }
 
+              // Track specialized agent invocation.
               if (
                 block.name === 'Task' ||
                 block.name === 'Agent'
               ) {
+
                 const input = block.input;
 
                 if (
@@ -280,6 +341,7 @@ MANDATORY WORKFLOW:
                   'subagent_type' in input &&
                   typeof input.subagent_type === 'string'
                 ) {
+
                   const agentName = input.subagent_type;
 
                   invokedAgents.add(agentName);
@@ -292,8 +354,12 @@ MANDATORY WORKFLOW:
             }
           }
 
-          // 10. Process final result
+          // --------------------------------------------
+          // 11. Process final structured output
+          // --------------------------------------------
+
           if (message.type === 'result') {
+
             if (message.subtype !== 'success') {
               throw new Error(
                 `Code review failed: ${message.subtype}`
@@ -314,7 +380,9 @@ MANDATORY WORKFLOW:
             report = parsed.data;
           }
         }
+
       } catch (error) {
+
         throw new Error(
           'Orchestrator execution failed: ' +
           (
@@ -325,14 +393,20 @@ MANDATORY WORKFLOW:
         );
       }
 
-      // 11. Ensure a report exists
+      // ------------------------------------------------
+      // 12. Ensure report exists
+      // ------------------------------------------------
+
       if (!report) {
         throw new Error(
           'The orchestrator did not generate a review report.'
         );
       }
 
-      // 12. Reject empty reviews
+      // ------------------------------------------------
+      // 13. Reject empty reviews
+      // ------------------------------------------------
+
       if (report.fileReviews.length === 0) {
         throw new Error(
           'Review produced zero file analyses. ' +
@@ -341,7 +415,10 @@ MANDATORY WORKFLOW:
         );
       }
 
-      // 13. Verify GitHub MCP access
+      // ------------------------------------------------
+      // 14. Verify GitHub MCP connectivity
+      // ------------------------------------------------
+
       if (!githubConnected) {
         throw new Error(
           'GitHub MCP did not report a connected status.'
@@ -354,7 +431,10 @@ MANDATORY WORKFLOW:
         );
       }
 
-      // 14. Verify all required agents were invoked
+      // ------------------------------------------------
+      // 15. Verify specialized agent execution
+      // ------------------------------------------------
+
       const missingAgents = requiredAgents.filter(
         (agent) => !invokedAgents.has(agent)
       );
@@ -366,7 +446,10 @@ MANDATORY WORKFLOW:
         );
       }
 
-      // 15. Verify summary consistency
+      // ------------------------------------------------
+      // 16. Validate summary consistency
+      // ------------------------------------------------
+
       if (
         report.summary.totalFiles !==
         report.fileReviews.length
@@ -377,8 +460,13 @@ MANDATORY WORKFLOW:
         );
       }
 
-      // 16. Print execution summary
-      console.log('\n=== AGENT EXECUTION SUMMARY ===');
+      // ------------------------------------------------
+      // 17. Print execution summary
+      // ------------------------------------------------
+
+      console.log(
+        '\n=== AGENT EXECUTION SUMMARY ==='
+      );
 
       console.log(
         'GitHub MCP connected:',
@@ -405,11 +493,18 @@ MANDATORY WORKFLOW:
       );
 
       return report;
+
     } finally {
-      // Always release the slot, including on failure.
+
+      // ------------------------------------------------
+      // 18. Always release rate-limiter slot
+      // ------------------------------------------------
+
       globalRateLimiter.release();
 
-      console.log('[RATE LIMITER] Execution slot released.');
+      console.log(
+        '[RATE LIMITER] Execution slot released.'
+      );
     }
   }
 }
