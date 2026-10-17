@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Code Review Report — udacity/cd14715-simple-todo-app #1</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Arial, sans-serif;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+      background: #f7f9fc;
+      color: #243447;
+      line-height: 1.6;
+    }
+
+    h1 {
+      font-size: 2rem;
+      border-bottom: 3px solid #3498db;
+      padding-bottom: 12px;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      margin-top: 34px;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      overflow-wrap: anywhere;
+    }
+
+    .subtitle,
+    .muted {
+      color: #66788a;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      background: white;
+      padding: 24px;
+      margin: 24px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    }
+
+    .metric {
+      text-align: center;
+    }
+
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #2980b9;
+    }
+
+    .metric-label {
+      font-size: 0.85rem;
+      color: #66788a;
+    }
+
+    .recommendations {
+      list-style: none;
+      padding: 0;
+    }
+
+    .recommendation,
+    .file-card {
+      background: white;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .recommendation {
+      border-left: 4px solid #3498db;
+    }
+
+    .priority-critical,
+    .severity-critical {
+      border-left: 4px solid #e74c3c;
+    }
+
+    .priority-high,
+    .severity-high {
+      border-left: 4px solid #f39c12;
+    }
+
+    .priority-medium,
+    .severity-medium {
+      border-left: 4px solid #3498db;
+    }
+
+    .priority-low,
+    .severity-low,
+    .severity-info {
+      border-left: 4px solid #27ae60;
+    }
+
+    .priority-label {
+      font-weight: 700;
+      margin-right: 8px;
+      text-transform: uppercase;
+    }
+
+    .recommendation p {
+      margin: 8px 0;
+    }
+
+    .file-card {
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .file-card h3 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+
+    .file-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 16px 0 22px;
+    }
+
+    .file-metrics span {
+      padding: 7px 12px;
+      background: #edf4fb;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    details {
+      border: 1px solid #e0e6ed;
+      border-radius: 7px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 14px 16px;
+      font-weight: 600;
+      background: #f4f7fa;
+    }
+
+    summary:hover {
+      background: #eaf1f8;
+    }
+
+    .count {
+      float: right;
+      color: #66788a;
+      font-size: 0.85rem;
+      font-weight: 400;
+    }
+
+    .details-content {
+      padding: 16px;
+    }
+
+    .finding {
+      padding: 14px 16px;
+      border: 1px solid #e5e9ef;
+      border-left: 4px solid #3498db;
+      border-radius: 5px;
+      margin-top: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .finding-heading {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #edf2f7;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .code-comparison {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .code-comparison > div {
+      min-width: 0;
+    }
+
+    .code-comparison h5 {
+      margin: 0 0 8px;
+    }
+
+    pre {
+      background: #182230;
+      color: #e6edf3;
+      padding: 14px;
+      border-radius: 6px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-size: 0.85rem;
+    }
+
+    .empty {
+      color: #66788a;
+      font-style: italic;
+    }
+
+    footer {
+      border-top: 1px solid #e0e6ed;
+      margin-top: 40px;
+      padding-top: 20px;
+      text-align: center;
+      color: #66788a;
+      font-size: 0.9rem;
+    }
+
+    .agent-versions {
+      list-style: none;
+      padding: 0;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+
+      .file-card {
+        padding: 14px;
+      }
+
+      .count {
+        float: none;
+        margin-left: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Code Review Report</h1>
+
+  <p class="subtitle">
+    Repository:
+    <strong>udacity/cd14715-simple-todo-app</strong>
+    &nbsp;|&nbsp;
+    Pull Request: <strong>#1</strong>
+  </p>
+
+  <section class="summary">
+
+      <div class="metric">
+        <div class="metric-value">72</div>
+        <div class="metric-label">Overall Score</div>
+      </div>
+
+
+      <div class="metric">
+        <div class="metric-value">1</div>
+        <div class="metric-label">Files Reviewed</div>
+      </div>
+
+
+      <div class="metric">
+        <div class="metric-value">0</div>
+        <div class="metric-label">Critical Issues</div>
+      </div>
+
+
+      <div class="metric">
+        <div class="metric-value">6</div>
+        <div class="metric-label">Tests Needed</div>
+      </div>
+
+
+      <div class="metric">
+        <div class="metric-value">7</div>
+        <div class="metric-label">Refactorings</div>
+      </div>
+
+  </section>
+
+  <h2>Top Recommendations</h2>
+
+  <ul class="recommendations">
+
+        <li class="recommendation priority-critical">
+          <div>
+            <span class="priority-label">
+              CRITICAL
+            </span>
+            <strong>Testing</strong>
+          </div>
+
+          <p>Add comprehensive test coverage for security-critical functions. The isValidEmail and sanitizeInput functions handle user input validation and XSS prevention but have zero test coverage, creating significant security risk.</p>
+
+          <small>
+            Files: fixtures/clean-code.ts
+          </small>
+        </li>
+
+        <li class="recommendation priority-high">
+          <div>
+            <span class="priority-label">
+              HIGH
+            </span>
+            <strong>Security</strong>
+          </div>
+
+          <p>Replace custom security implementations with battle-tested libraries. The email validation regex and XSS sanitization are incomplete and bypassable. Use validator.js for email validation and DOMPurify for sanitization instead of manual implementations.</p>
+
+          <small>
+            Files: fixtures/clean-code.ts
+          </small>
+        </li>
+
+        <li class="recommendation priority-high">
+          <div>
+            <span class="priority-label">
+              HIGH
+            </span>
+            <strong>Security</strong>
+          </div>
+
+          <p>Replace non-cryptographic ID generation with secure UUID library. The current generateId function uses Date.now() and Math.random(), which are not cryptographically secure and prone to collisions in high-traffic scenarios. Use crypto.randomUUID() or the uuid package.</p>
+
+          <small>
+            Files: fixtures/clean-code.ts
+          </small>
+        </li>
+
+        <li class="recommendation priority-medium">
+          <div>
+            <span class="priority-label">
+              MEDIUM
+            </span>
+            <strong>Code Quality</strong>
+          </div>
+
+          <p>Implement custom error types for better error handling. Generic Error objects make it difficult to distinguish validation errors from other errors. Create a ValidationError class with field and code properties for structured error information.</p>
+
+          <small>
+            Files: fixtures/clean-code.ts
+          </small>
+        </li>
+
+        <li class="recommendation priority-medium">
+          <div>
+            <span class="priority-label">
+              MEDIUM
+            </span>
+            <strong>Architecture</strong>
+          </div>
+
+          <p>Apply dependency injection pattern for database operations. The saveUser function has commented-out code and is untestable. Create a UserRepository interface with implementations for different databases, enabling proper testing with mocks.</p>
+
+          <small>
+            Files: fixtures/clean-code.ts
+          </small>
+        </li>
+
+        <li class="recommendation priority-medium">
+          <div>
+            <span class="priority-label">
+              MEDIUM
+            </span>
+            <strong>Code Quality</strong>
+          </div>
+
+          <p>Separate concerns in createUser function. The function currently handles validation, sanitization, object creation, and persistence, violating Single Responsibility Principle. Extract into UserInputValidator and UserFactory classes.</p>
+
+          <small>
+            Files: fixtures/clean-code.ts
+          </small>
+        </li>
+
+        <li class="recommendation priority-low">
+          <div>
+            <span class="priority-label">
+              LOW
+            </span>
+            <strong>Maintainability</strong>
+          </div>
+
+          <p>Complete or remove commented database implementation. The saveUser function has a commented-out db.query call, making the code incomplete. Either implement with proper error handling or document why it&#39;s commented out.</p>
+
+          <small>
+            Files: fixtures/clean-code.ts
+          </small>
+        </li>
+
+  </ul>
+
+  <h2>Detailed File Reviews</h2>
+
+
+          <section class="file-card">
+            <h3>fixtures/clean-code.ts</h3>
+
+            <div class="file-metrics">
+              <span><strong>Quality:</strong> 72/100</span>
+              <span><strong>Estimated coverage:</strong> 0%</span>
+              <span><strong>Tests present:</strong> No</span>
+            </div>
+
+            <details open>
+              <summary>
+                Code Quality
+                <span class="count">12 issues</span>
+              </summary>
+
+              <div class="details-content">
+                <p>The code demonstrates good structure and intent with input validation, sanitization, and parameterized queries. However, it has several medium-severity security issues: weak email validation regex, incomplete XSS sanitization that could be bypassed, and non-cryptographic ID generation prone to collisions. The sanitization and validation implementations are custom rather than using battle-tested libraries, which increases security risk. Database code is commented out indicating incomplete implementation. While the code follows good practices like parameterized queries and input validation, the execution has gaps that could lead to security vulnerabilities in production. Recommend using established libraries (validator.js, DOMPurify, uuid) and completing the database implementation with proper error handling.</p>
+
+            <div class="finding severity-medium">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM</span>
+                <strong>security</strong>
+                <span class="muted">Line 30</span>
+              </div>
+
+              <p>Email validation regex is too permissive and doesn&#39;t fully comply with RFC 5322 standards. It allows invalid email formats like &#39;test@domain&#39; or &#39;test@@domain.com&#39;</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Use a more robust email validation library like &#39;validator.js&#39; or implement RFC 5322 compliant regex. Consider: /^[a-zA-Z0-9.!#$%&amp;&#39;*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+              </p>
+            </div>
+
+            <div class="finding severity-medium">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM</span>
+                <strong>security</strong>
+                <span class="muted">Line 37</span>
+              </div>
+
+              <p>XSS sanitization is incomplete and potentially bypassable. It only handles basic HTML entities but misses many XSS vectors like event handlers, script tags, and encoded attacks</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Use a well-tested sanitization library like DOMPurify or validator.js escape() function. Manual sanitization is error-prone and should be avoided for security-critical operations
+              </p>
+            </div>
+
+            <div class="finding severity-low">
+              <div class="finding-heading">
+                <span class="tag">LOW</span>
+                <strong>best-practice</strong>
+                <span class="muted">Line 37</span>
+              </div>
+
+              <p>Function performs multiple string replacements inefficiently. Each replace() creates a new string object</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Consider using a single regex with replace callback or a sanitization library that performs all replacements in one pass
+              </p>
+            </div>
+
+            <div class="finding severity-medium">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM</span>
+                <strong>security</strong>
+                <span class="muted">Line 77</span>
+              </div>
+
+              <p>ID generation using Date.now() and Math.random() is not cryptographically secure and may produce collisions in high-traffic scenarios</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Use crypto.randomUUID() for secure, collision-resistant IDs: &#39;import { randomUUID } from &quot;crypto&quot;; return randomUUID();&#39; or use a library like &#39;uuid&#39;
+              </p>
+            </div>
+
+            <div class="finding severity-low">
+              <div class="finding-heading">
+                <span class="tag">LOW</span>
+                <strong>bug-risk</strong>
+                <span class="muted">Line 77</span>
+              </div>
+
+              <p>ID generation doesn&#39;t guarantee uniqueness. Multiple requests at the same millisecond could generate identical IDs due to Date.now() collision</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Use UUID v4 or implement a proper distributed ID generation strategy (e.g., snowflake algorithm, database sequences, or UUID library)
+              </p>
+            </div>
+
+            <div class="finding severity-low">
+              <div class="finding-heading">
+                <span class="tag">LOW</span>
+                <strong>security</strong>
+                <span class="muted">Line 60</span>
+              </div>
+
+              <p>Email is not sanitized before storage, only converted to lowercase. Malicious content in email could be stored if validation is bypassed</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Apply sanitization to email as well, or at minimum, validate against a whitelist of allowed characters for email addresses
+              </p>
+            </div>
+
+            <div class="finding severity-low">
+              <div class="finding-heading">
+                <span class="tag">LOW</span>
+                <strong>maintainability</strong>
+                <span class="muted">Line 85</span>
+              </div>
+
+              <p>Database query execution is commented out, making the function non-functional. This suggests incomplete implementation or dead code</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Either implement the actual database call with proper error handling and connection management, or add a clear TODO comment explaining why it&#39;s commented out
+              </p>
+            </div>
+
+            <div class="finding severity-low">
+              <div class="finding-heading">
+                <span class="tag">LOW</span>
+                <strong>best-practice</strong>
+                <span class="muted">Line 48</span>
+              </div>
+
+              <p>Error messages expose implementation details that could aid attackers. Generic error messages are better for security</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Use generic error messages for client-facing errors (e.g., &#39;Invalid input&#39;) and log specific details server-side for debugging
+              </p>
+            </div>
+
+            <div class="finding severity-info">
+              <div class="finding-heading">
+                <span class="tag">INFO</span>
+                <strong>maintainability</strong>
+                <span class="muted">Line 83</span>
+              </div>
+
+              <p>No error handling for database operations. If db.query fails, the error will propagate without context</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Wrap database operations in try-catch blocks and provide meaningful error messages: try { await db.query(...) } catch (error) { throw new Error(&#39;Failed to save user&#39;, { cause: error }); }
+              </p>
+            </div>
+
+            <div class="finding severity-info">
+              <div class="finding-heading">
+                <span class="tag">INFO</span>
+                <strong>best-practice</strong>
+                <span class="muted">Line 47</span>
+              </div>
+
+              <p>Input validation could be more robust. No validation for name length, special characters, or email length limits</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Add validation for: name length (min/max), email length (max 254 chars per RFC), and potentially character whitelisting for names
+              </p>
+            </div>
+
+            <div class="finding severity-info">
+              <div class="finding-heading">
+                <span class="tag">INFO</span>
+                <strong>maintainability</strong>
+                <span class="muted">Line 83</span>
+              </div>
+
+              <p>Hardcoded table name &#39;users&#39; reduces flexibility and makes testing harder</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Extract table name to a constant or configuration: &#39;const USERS_TABLE = &#39;users&#39;;&#39; or pass as parameter for better testability
+              </p>
+            </div>
+
+            <div class="finding severity-info">
+              <div class="finding-heading">
+                <span class="tag">INFO</span>
+                <strong>style</strong>
+                <span class="muted">Line 77</span>
+              </div>
+
+              <p>Magic numbers in string slicing (2, 9) are not self-documenting</p>
+
+              <p>
+                <strong>Suggestion:</strong>
+                Extract to named constants: &#39;const RANDOM_ID_START = 2; const RANDOM_ID_END = 9;&#39; to improve readability
+              </p>
+            </div>
+
+              </div>
+            </details>
+
+            <details>
+              <summary>
+                Test Coverage
+                <span class="count">12 gaps</span>
+              </summary>
+
+              <div class="details-content">
+                <p>No tests exist for this file. All 4 exported functions (isValidEmail, sanitizeInput, createUser, and the 2 internal functions generateId and saveUser) are completely untested. Critical security functions like input sanitization and email validation lack any verification. Error handling branches for missing fields and invalid email format have no test coverage. Edge cases around email normalization, XSS prevention, and unique ID generation are not validated.</p>
+
+                <p>
+                  <strong>Related test files:</strong>
+                  None identified
+                </p>
+
+
+            <div class="finding priority-critical">
+              <div class="finding-heading">
+                <span class="tag">CRITICAL</span>
+                <strong>function</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:30</p>
+              <p><strong>Reason:</strong> isValidEmail is a critical security function that validates email format. Incorrect validation could allow invalid emails or reject valid ones.</p>
+              <p><strong>Suggested test:</strong> Test with valid emails (user@example.com, user+tag@example.co.uk), invalid emails (missing @, missing domain, spaces), edge cases (multiple @, unicode characters, extremely long emails).</p>
+            </div>
+
+            <div class="finding priority-critical">
+              <div class="finding-heading">
+                <span class="tag">CRITICAL</span>
+                <strong>function</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:38</p>
+              <p><strong>Reason:</strong> sanitizeInput prevents XSS attacks. Missing tests could leave security vulnerabilities undetected.</p>
+              <p><strong>Suggested test:</strong> Test XSS prevention with &lt;script&gt; tags, various quote types (&#39; and &quot;), combinations of special characters, empty strings, and strings with only special characters.</p>
+            </div>
+
+            <div class="finding priority-high">
+              <div class="finding-heading">
+                <span class="tag">HIGH</span>
+                <strong>branch</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:52-54</p>
+              <p><strong>Reason:</strong> The validation branch that checks for missing email and name is not tested. This is a critical error handling path.</p>
+              <p><strong>Suggested test:</strong> Add tests for createUser with missing email, missing name, and both missing. Verify error message is &#39;Email and name are required&#39;.</p>
+            </div>
+
+            <div class="finding priority-high">
+              <div class="finding-heading">
+                <span class="tag">HIGH</span>
+                <strong>branch</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:56-58</p>
+              <p><strong>Reason:</strong> The email validation error branch is not tested. This guards against invalid email formats.</p>
+              <p><strong>Suggested test:</strong> Add test for createUser with invalid email format (e.g., &#39;not-an-email&#39;). Verify error message is &#39;Invalid email format&#39;.</p>
+            </div>
+
+            <div class="finding priority-medium">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM</span>
+                <strong>edge-case</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:61</p>
+              <p><strong>Reason:</strong> Name sanitization is not verified to actually prevent XSS in the context of user creation.</p>
+              <p><strong>Suggested test:</strong> Test createUser with name containing XSS payloads like &#39;&lt;script&gt;alert(1)&lt;/script&gt;&#39; and verify the output user.name is properly sanitized.</p>
+            </div>
+
+            <div class="finding priority-medium">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM</span>
+                <strong>edge-case</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:65</p>
+              <p><strong>Reason:</strong> Email lowercase conversion is not tested. Mixed case emails should be normalized.</p>
+              <p><strong>Suggested test:</strong> Test createUser with mixed case email &#39;User@Example.COM&#39; and verify user.email is &#39;user@example.com&#39;.</p>
+            </div>
+
+            <div class="finding priority-high">
+              <div class="finding-heading">
+                <span class="tag">HIGH</span>
+                <strong>function</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:77</p>
+              <p><strong>Reason:</strong> generateId creates unique identifiers. Collisions or predictable IDs could cause security issues.</p>
+              <p><strong>Suggested test:</strong> Test that generateId generates unique IDs across multiple calls, follows expected format &#39;user_TIMESTAMP_RANDOM&#39;, and IDs are of reasonable length.</p>
+            </div>
+
+            <div class="finding priority-high">
+              <div class="finding-heading">
+                <span class="tag">HIGH</span>
+                <strong>function</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:85</p>
+              <p><strong>Reason:</strong> saveUser is the database persistence layer. While commented out, its signature and parameter handling should be tested.</p>
+              <p><strong>Suggested test:</strong> Mock the database and verify saveUser is called with correct parameters (id, email, name, createdAt) in the expected format.</p>
+            </div>
+
+            <div class="finding priority-low">
+              <div class="finding-heading">
+                <span class="tag">LOW</span>
+                <strong>edge-case</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:64</p>
+              <p><strong>Reason:</strong> The createdAt timestamp is not verified to be set to current time.</p>
+              <p><strong>Suggested test:</strong> Test that createUser sets createdAt to a Date close to the current time (within a few milliseconds).</p>
+            </div>
+
+            <div class="finding priority-medium">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM</span>
+                <strong>edge-case</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:30</p>
+              <p><strong>Reason:</strong> Email regex may not handle all valid email formats according to RFC 5322.</p>
+              <p><strong>Suggested test:</strong> Test edge case emails like quoted strings (&#39;user@example.com&#39;), IPs (user@[192.168.1.1]), very long local parts (64 characters), and internationalized domains.</p>
+            </div>
+
+            <div class="finding priority-medium">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM</span>
+                <strong>branch</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:48-72</p>
+              <p><strong>Reason:</strong> The happy path where all validations pass and user is created successfully is not tested.</p>
+              <p><strong>Suggested test:</strong> Test createUser with valid input {email: &#39;test@example.com&#39;, name: &#39;John Doe&#39;} and verify the returned User object has all required fields with correct values.</p>
+            </div>
+
+            <div class="finding priority-low">
+              <div class="finding-heading">
+                <span class="tag">LOW</span>
+                <strong>edge-case</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:38-44</p>
+              <p><strong>Reason:</strong> sanitizeInput does not handle all potential XSS vectors like event handlers or encoded characters.</p>
+              <p><strong>Suggested test:</strong> Test with additional XSS vectors: onload handlers, JavaScript URLs, HTML entities, and verify behavior (current implementation has limited protection).</p>
+            </div>
+
+              </div>
+            </details>
+
+            <details>
+              <summary>
+                Refactoring Suggestions
+                <span class="count">7 suggestions</span>
+              </summary>
+
+              <div class="details-content">
+                <p>The code is well-structured and follows clean code principles, but has opportunities for modernization and improved design patterns. Key improvements include: (1) using established libraries for email validation and XSS prevention instead of manual implementations, (2) separating concerns by extracting validation logic into dedicated components, (3) implementing custom error types for better error handling, (4) using UUID libraries for more reliable ID generation, (5) applying dependency injection for database operations to improve testability, and (6) preferring validation over sanitization for plain text fields. These changes would enhance security, maintainability, and testability while preserving the existing behavior.</p>
+
+            <div class="finding">
+              <div class="finding-heading">
+                <span class="tag">LOW IMPACT</span>
+                <strong>modernize</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:28-31</p>
+              <p>The email validation regex is overly simplistic and doesn&#39;t handle many valid email edge cases. Consider using a more robust email validation library or a comprehensive regex pattern.</p>
+              <p><strong>Benefits:</strong> Improves email validation accuracy and reduces false positives/negatives. Using a library like Zod also provides better error messages and type safety.</p>
+
+              <div class="code-comparison">
+                <div>
+                  <h5>Before</h5>
+                  <pre><code>export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}</code></pre>
+                </div>
+
+                <div>
+                  <h5>After</h5>
+                  <pre><code>// Option 1: Use a validation library
+import { z } from &#39;zod&#39;;
+
+const emailSchema = z.string().email();
+
+export function isValidEmail(email: string): boolean {
+  return emailSchema.safeParse(email).success;
+}
+
+// Option 2: More comprehensive regex
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[a-zA-Z0-9.!#$%&amp;&#39;*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  return emailRegex.test(email);
+}</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="finding">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM IMPACT</span>
+                <strong>modernize</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:36-42</p>
+              <p>The HTML entity encoding is incomplete and should use a proper sanitization library to prevent XSS vulnerabilities. Manual replacement misses many attack vectors.</p>
+              <p><strong>Benefits:</strong> Using a battle-tested library like DOMPurify provides comprehensive XSS protection and handles edge cases that manual replacement misses (e.g., unicode characters, null bytes, event handlers).</p>
+
+              <div class="code-comparison">
+                <div>
+                  <h5>Before</h5>
+                  <pre><code>export function sanitizeInput(input: string): string {
+  return input
+    .replace(/&lt;/g, &#39;&amp;lt;&#39;)
+    .replace(/&gt;/g, &#39;&amp;gt;&#39;)
+    .replace(/&quot;/g, &#39;&amp;quot;&#39;)
+    .replace(/&#39;/g, &#39;&amp;#039;&#39;);
+}</code></pre>
+                </div>
+
+                <div>
+                  <h5>After</h5>
+                  <pre><code>import DOMPurify from &#39;dompurify&#39;;
+import { JSDOM } from &#39;jsdom&#39;;
+
+const window = new JSDOM(&#39;&#39;).window;
+const purify = DOMPurify(window);
+
+export function sanitizeInput(input: string): string {
+  return purify.sanitize(input, { ALLOWED_TAGS: [] });
+}
+
+// Or for simpler text-only sanitization:
+export function sanitizeInput(input: string): string {
+  const div = document.createElement(&#39;div&#39;);
+  div.textContent = input;
+  return div.innerHTML;
+}</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="finding">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM IMPACT</span>
+                <strong>simplify</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:47-66</p>
+              <p>The createUser function performs validation, sanitization, object creation, and persistence. This violates Single Responsibility Principle. Consider extracting validation logic into a separate validator.</p>
+              <p><strong>Benefits:</strong> Improves testability by separating validation, object creation, and persistence concerns. Each component can be tested independently and reused in different contexts.</p>
+
+              <div class="code-comparison">
+                <div>
+                  <h5>Before</h5>
+                  <pre><code>export async function createUser(input: CreateUserInput): Promise&lt;User&gt; {
+  // Validate input
+  if (!input.email || !input.name) {
+    throw new Error(&#39;Email and name are required&#39;);
+  }
+
+  if (!isValidEmail(input.email)) {
+    throw new Error(&#39;Invalid email format&#39;);
+  }
+
+  // Sanitize input
+  const sanitizedName = sanitizeInput(input.name);
+
+  // Create user object
+  const user: User = {
+    id: generateId(),
+    email: input.email.toLowerCase(),
+    name: sanitizedName,
+    createdAt: new Date()
+  };
+
+  // Save to database (using parameterized query)
+  await saveUser(user);
+
+  return user;
+}</code></pre>
+                </div>
+
+                <div>
+                  <h5>After</h5>
+                  <pre><code>class UserInputValidator {
+  validate(input: CreateUserInput): void {
+    if (!input.email || !input.name) {
+      throw new Error(&#39;Email and name are required&#39;);
+    }
+
+    if (!isValidEmail(input.email)) {
+      throw new Error(&#39;Invalid email format&#39;);
+    }
+  }
+}
+
+class UserFactory {
+  create(input: CreateUserInput): User {
+    return {
+      id: generateId(),
+      email: input.email.toLowerCase(),
+      name: sanitizeInput(input.name),
+      createdAt: new Date()
+    };
+  }
+}
+
+const validator = new UserInputValidator();
+const factory = new UserFactory();
+
+export async function createUser(input: CreateUserInput): Promise&lt;User&gt; {
+  validator.validate(input);
+  const user = factory.create(input);
+  await saveUser(user);
+  return user;
+}</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="finding">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM IMPACT</span>
+                <strong>pattern-improvement</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:47-51</p>
+              <p>Input validation throws generic Error objects. Use custom error types for better error handling and more informative error messages.</p>
+              <p><strong>Benefits:</strong> Custom error types allow callers to distinguish between validation errors and other errors, enable better error handling strategies, and provide structured error information (field name, error code) for API responses.</p>
+
+              <div class="code-comparison">
+                <div>
+                  <h5>Before</h5>
+                  <pre><code>if (!input.email || !input.name) {
+  throw new Error(&#39;Email and name are required&#39;);
+}
+
+if (!isValidEmail(input.email)) {
+  throw new Error(&#39;Invalid email format&#39;);
+}</code></pre>
+                </div>
+
+                <div>
+                  <h5>After</h5>
+                  <pre><code>export class ValidationError extends Error {
+  constructor(
+    message: string,
+    public field: string,
+    public code: string
+  ) {
+    super(message);
+    this.name = &#39;ValidationError&#39;;
+  }
+}
+
+if (!input.email) {
+  throw new ValidationError(
+    &#39;Email is required&#39;,
+    &#39;email&#39;,
+    &#39;REQUIRED_FIELD&#39;
+  );
+}
+
+if (!input.name) {
+  throw new ValidationError(
+    &#39;Name is required&#39;,
+    &#39;name&#39;,
+    &#39;REQUIRED_FIELD&#39;
+  );
+}
+
+if (!isValidEmail(input.email)) {
+  throw new ValidationError(
+    &#39;Invalid email format&#39;,
+    &#39;email&#39;,
+    &#39;INVALID_FORMAT&#39;
+  );
+}</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="finding">
+              <div class="finding-heading">
+                <span class="tag">LOW IMPACT</span>
+                <strong>simplify</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:72-75</p>
+              <p>The generateId function uses a combination of timestamp and random string, but this approach has collision risks and is not cryptographically secure. Consider using a UUID library.</p>
+              <p><strong>Benefits:</strong> UUIDs provide better uniqueness guarantees and are industry standard. nanoid provides shorter, URL-safe IDs with customizable length and collision resistance.</p>
+
+              <div class="code-comparison">
+                <div>
+                  <h5>Before</h5>
+                  <pre><code>function generateId(): string {
+  return `user_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}</code></pre>
+                </div>
+
+                <div>
+                  <h5>After</h5>
+                  <pre><code>import { v4 as uuidv4 } from &#39;uuid&#39;;
+
+function generateId(): string {
+  return `user_${uuidv4()}`;
+}
+
+// Or use nanoid for shorter IDs:
+import { nanoid } from &#39;nanoid&#39;;
+
+function generateId(): string {
+  return `user_${nanoid()}`;
+}</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="finding">
+              <div class="finding-heading">
+                <span class="tag">MEDIUM IMPACT</span>
+                <strong>pattern-improvement</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:80-87</p>
+              <p>The saveUser function has a commented-out database call, making it untestable and unclear about actual behavior. Consider using dependency injection to make database operations mockable.</p>
+              <p><strong>Benefits:</strong> Dependency injection makes the code testable by allowing mock repositories in tests. The interface-based design allows easy swapping of database implementations (PostgreSQL, MongoDB, in-memory for tests).</p>
+
+              <div class="code-comparison">
+                <div>
+                  <h5>Before</h5>
+                  <pre><code>async function saveUser(user: User): Promise&lt;void&gt; {
+  // Using parameterized query - safe from SQL injection
+  const query = &#39;INSERT INTO users (id, email, name, created_at) VALUES ($1, $2, $3, $4)&#39;;
+  const params = [user.id, user.email, user.name, user.createdAt];
+
+  // await db.query(query, params);
+}</code></pre>
+                </div>
+
+                <div>
+                  <h5>After</h5>
+                  <pre><code>export interface UserRepository {
+  save(user: User): Promise&lt;void&gt;;
+}
+
+export class PostgresUserRepository implements UserRepository {
+  constructor(private db: DatabaseClient) {}
+
+  async save(user: User): Promise&lt;void&gt; {
+    const query = &#39;INSERT INTO users (id, email, name, created_at) VALUES ($1, $2, $3, $4)&#39;;
+    const params = [user.id, user.email, user.name, user.createdAt];
+    await this.db.query(query, params);
+  }
+}
+
+// Update createUser to accept repository
+export async function createUser(
+  input: CreateUserInput,
+  repository: UserRepository
+): Promise&lt;User&gt; {
+  // validation and creation logic...
+  await repository.save(user);
+  return user;
+}</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="finding">
+              <div class="finding-heading">
+                <span class="tag">LOW IMPACT</span>
+                <strong>modernize</strong>
+              </div>
+
+              <p><strong>Location:</strong> fixtures/clean-code.ts:36-42</p>
+              <p>The sanitizeInput function sanitizes HTML entities, but user names typically shouldn&#39;t contain HTML. Consider adding validation to reject HTML content instead of sanitizing it.</p>
+              <p><strong>Benefits:</strong> Validation is more secure than sanitization because it rejects invalid input rather than trying to clean it. This prevents malicious input from being stored and provides clearer feedback to users about what is acceptable.</p>
+
+              <div class="code-comparison">
+                <div>
+                  <h5>Before</h5>
+                  <pre><code>export function sanitizeInput(input: string): string {
+  return input
+    .replace(/&lt;/g, &#39;&amp;lt;&#39;)
+    .replace(/&gt;/g, &#39;&amp;gt;&#39;)
+    .replace(/&quot;/g, &#39;&amp;quot;&#39;)
+    .replace(/&#39;/g, &#39;&amp;#039;&#39;);
+}</code></pre>
+                </div>
+
+                <div>
+                  <h5>After</h5>
+                  <pre><code>export function validatePlainText(input: string): string {
+  // Reject input containing HTML-like characters
+  if (/&lt;|&gt;|&amp;lt;|&amp;gt;/.test(input)) {
+    throw new ValidationError(
+      &#39;Name cannot contain HTML characters&#39;,
+      &#39;name&#39;,
+      &#39;INVALID_CHARACTERS&#39;
+    );
+  }
+  return input.trim();
+}
+
+// Or use a whitelist approach:
+export function validatePlainText(input: string): string {
+  // Only allow letters, spaces, hyphens, and apostrophes
+  if (!/^[a-zA-Z\s&#39;-]+$/.test(input)) {
+    throw new ValidationError(
+      &#39;Name can only contain letters, spaces, hyphens, and apostrophes&#39;,
+      &#39;name&#39;,
+      &#39;INVALID_CHARACTERS&#39;
+    );
+  }
+  return input.trim();
+}</code></pre>
+                </div>
+              </div>
+            </div>
+
+              </div>
+            </details>
+          </section>
+
+
+  <footer>
+    <p>
+      Generated at 2026-10-18T00:00:00.000Z
+      &bull;
+      Duration: 0 ms
+    </p>
+
+    <strong>Agent Versions</strong>
+
+    <ul class="agent-versions">
+
+        <li>
+          <strong>code-quality-analyzer</strong>: ae75afe
+        </li>
+
+        <li>
+          <strong>test-coverage-analyzer</strong>: a39997a
+        </li>
+
+        <li>
+          <strong>refactoring-suggester</strong>: ac102ce
+        </li>
+
+    </ul>
+  </footer>
+</body>
+</html>

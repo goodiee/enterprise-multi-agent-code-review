@@ -1,5 +1,6 @@
+
 /**
- * Custom error class for review operations
+ * Custom error class for review operations.
  */
 export class ReviewError extends Error {
   constructor(
@@ -9,12 +10,15 @@ export class ReviewError extends Error {
   ) {
     super(message);
     this.name = 'ReviewError';
-    Error.captureStackTrace(this, ReviewError);
+
+    Object.setPrototypeOf(this, ReviewError.prototype);
+
+    Error.captureStackTrace?.(this, ReviewError);
   }
 }
 
 /**
- * Error codes for the review system
+ * Error codes for the review system.
  */
 export const ErrorCodes = {
   // Configuration errors
@@ -39,89 +43,176 @@ export const ErrorCodes = {
   UNKNOWN_ERROR: 'UNKNOWN_ERROR'
 } as const;
 
-export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];
+export type ErrorCode =
+  typeof ErrorCodes[keyof typeof ErrorCodes];
 
 /**
- * Retry utility with exponential backoff
+ * Wait asynchronously for the specified number of milliseconds.
+ */
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise(resolve => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+/**
+ * Retry an asynchronous operation using exponential backoff.
  *
- * This function implements the retry pattern with exponential backoff and jitter.
+ * maxRetries is the number of retries AFTER the initial attempt.
  *
- * Algorithm:
- * 1. Try to execute the function
- * 2. If it succeeds, return the result
- * 3. If it fails and retries remain:
- *    - Calculate backoff delay: delayMs * 2^(attempt - 1)
- *    - Add jitter (random 0-100ms) to prevent thundering herd
- *    - Wait for the calculated duration
- *    - Retry
- * 4. If all retries exhausted, throw ReviewError with RETRY_EXHAUSTED code
+ * Example:
+ * maxRetries = 3
+ * Total possible attempts = 4
  *
- * @param fn - Async function to retry
- * @param maxRetries - Maximum number of retries (default: 3)
- * @param delayMs - Base delay in milliseconds (default: 1000)
- * @returns The result of the successful function execution
- * @throws ReviewError with RETRY_EXHAUSTED code if all retries fail
+ * Delay before retry:
+ * Retry 1: delayMs * 2^0 + jitter
+ * Retry 2: delayMs * 2^1 + jitter
+ * Retry 3: delayMs * 2^2 + jitter
+ *
+ * Jitter adds a random delay between 0 and 100 ms.
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
   delayMs: number = 1000
 ): Promise<T> {
-  // TODO: Implement retry logic with exponential backoff
-  // Hints:
-  // - Use a for loop from 1 to maxRetries
-  // - Use try/catch to catch errors
-  // - Calculate backoff: delayMs * Math.pow(2, attempt - 1)
-  // - Add jitter: Math.random() * 100
-  // - Use setTimeout wrapped in Promise for delay
-  // - Throw ReviewError with ErrorCodes.RETRY_EXHAUSTED if all retries fail
+  if (
+    !Number.isSafeInteger(maxRetries) ||
+    maxRetries < 0
+  ) {
+    throw new ReviewError(
+      'maxRetries must be a non-negative integer.',
+      ErrorCodes.INVALID_CONFIG,
+      { maxRetries }
+    );
+  }
 
-  throw new Error('Not implemented');
+  if (
+    !Number.isFinite(delayMs) ||
+    delayMs < 0
+  ) {
+    throw new ReviewError(
+      'delayMs must be a non-negative number.',
+      ErrorCodes.INVALID_CONFIG,
+      { delayMs }
+    );
+  }
+
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      // No retries remain.
+      if (attempt === maxRetries) {
+        break;
+      }
+
+      // Exponential backoff.
+      const backoff = delayMs * Math.pow(2, attempt);
+
+      // Random jitter between 0 and 100 ms.
+      const jitter = Math.random() * 100;
+
+      const waitTime = backoff + jitter;
+
+      console.warn(
+        `[Retry] Attempt ${attempt + 1} failed. ` +
+        `Retrying in ${Math.round(waitTime)} ms. ` +
+        `Error: ${formatError(error)}`
+      );
+
+      await sleep(waitTime);
+    }
+  }
+
+  throw new ReviewError(
+    `Operation failed after ${maxRetries + 1} attempts: ` +
+    formatError(lastError),
+    ErrorCodes.RETRY_EXHAUSTED,
+    {
+      attempts: maxRetries + 1,
+      maxRetries,
+      lastError: formatError(lastError)
+    }
+  );
 }
 
 /**
- * Wrap an async function with timeout
+ * Wrap an asynchronous operation with a timeout.
  *
- * This function races the provided function against a timeout.
- * Whichever completes first wins.
+ * Promise.race returns or rejects with whichever promise
+ * settles first.
  *
- * @param fn - Async function to wrap
- * @param timeoutMs - Timeout in milliseconds
- * @param errorMessage - Custom error message
- * @returns The result of the function if it completes before timeout
- * @throws ReviewError with AGENT_TIMEOUT code if timeout is reached
+ * Note: timing out does not cancel the underlying operation.
  */
 export async function withTimeout<T>(
   fn: () => Promise<T>,
   timeoutMs: number,
   errorMessage: string = 'Operation timed out'
 ): Promise<T> {
-  // TODO: Implement timeout wrapper using Promise.race
-  // Hints:
-  // - Use Promise.race to race fn() against a timeout promise
-  // - The timeout promise should reject after timeoutMs milliseconds
-  // - Throw ReviewError with ErrorCodes.AGENT_TIMEOUT on timeout
-  // - Include timeoutMs in metadata
+  if (
+    !Number.isFinite(timeoutMs) ||
+    timeoutMs <= 0
+  ) {
+    throw new ReviewError(
+      'timeoutMs must be a positive number.',
+      ErrorCodes.INVALID_CONFIG,
+      { timeoutMs }
+    );
+  }
 
-  throw new Error('Not implemented');
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(
+        new ReviewError(
+          `${errorMessage} after ${timeoutMs} ms`,
+          ErrorCodes.AGENT_TIMEOUT,
+          { timeoutMs }
+        )
+      );
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([
+      Promise.resolve().then(fn),
+      timeoutPromise
+    ]);
+  } finally {
+    // Prevent the timer from remaining active when
+    // the operation finishes before the timeout.
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
+  }
 }
 
 /**
- * Check if an error is a ReviewError
+ * Check whether an unknown error is a ReviewError.
  */
-export function isReviewError(error: unknown): error is ReviewError {
+export function isReviewError(
+  error: unknown
+): error is ReviewError {
   return error instanceof ReviewError;
 }
 
 /**
- * Format error for logging/display
+ * Format an error for logging or display.
  */
 export function formatError(error: unknown): string {
   if (isReviewError(error)) {
     return `[${error.code}] ${error.message}`;
   }
+
   if (error instanceof Error) {
     return error.message;
   }
+
   return String(error);
 }
