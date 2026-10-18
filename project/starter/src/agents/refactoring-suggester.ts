@@ -14,7 +14,8 @@ export const refactoringSuggester: AgentDefinition = {
   tools: [
     'Read',
     'Glob',
-    'Grep'
+    'Grep',
+    'Skill'
   ],
 
   model: 'inherit'

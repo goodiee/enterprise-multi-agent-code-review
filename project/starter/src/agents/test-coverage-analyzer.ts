@@ -13,7 +13,8 @@ export const testCoverageAnalyzer: AgentDefinition = {
   tools: [
     'Read',
     'Glob',
-    'Grep'
+    'Grep',
+    'Skill'
   ],
 
   model: 'inherit'
